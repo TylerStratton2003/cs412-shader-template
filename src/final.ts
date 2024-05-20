@@ -11,16 +11,18 @@ import * as THREE from 'three';
 let canvas : HTMLCanvasElement;
 let renderer : WebGLRenderer;
 let camera : PerspectiveCamera;
+var spotlightGroup: THREE.Object3D<THREE.Object3DEventMap>;
+let angle : number;
 let scene : Scene;
+var ogreMesh : Mesh;
 var intensity : number = 1;
+var uniforms: { diffuseTex: any; aoTex: any; alpha: any; specular: any; lights?: { value: { color: THREE.Color; position: Vector3; }[]; }; };
 let directionalLight : THREE.DirectionalLight = new THREE.DirectionalLight(0xff0000, intensity);
 directionalLight.position.set(0, 0, 0); // Position of the light
 
 let capture = false;   // Whether or not to download an image of the canvas on the next redraw
 
-export const controller = {init, resize};
-
-const uniforms = {
+uniforms = {
     lights: { value: [
         { color: directionalLight.color, position: directionalLight.position }
     ]},
@@ -29,6 +31,8 @@ const uniforms = {
     diffuseTex: { value: null as Texture },
     aoTex: {value: null as Texture}
 };
+
+export const controller = {init, resize};
 
 function init() {
     setupGui();
@@ -51,13 +55,12 @@ function init() {
 
     // Position and rotate cone to match the directional light
     coneMesh.position.copy(directionalLight.position);
-    var target = new THREE.Vector3(5, 5, 5);
+    var target = new THREE.Vector3(3, 8, 15);
     target.addVectors(directionalLight.position, directionalLight.target.position);
-    coneMesh.lookAt(target);
     scene.add(coneMesh);
 
     // Create an Object3D group and add the light and cone to it
-    var spotlightGroup = new THREE.Object3D();
+    spotlightGroup = new THREE.Object3D();
     spotlightGroup.add(directionalLight);
     spotlightGroup.add(coneMesh);
     scene.add(spotlightGroup);
@@ -65,6 +68,7 @@ function init() {
     spotlightGroup.position.x -= 8; // Move right +, - left
     spotlightGroup.position.y -= 8; // Move up +, - down
     spotlightGroup.position.z -= 4; // Move forward +, - back
+    angle = spotlightGroup.rotation.y;
 
     // Optional: Add spotlight helper for visualization
     var spotlightHelper = new THREE.SpotLightHelper(directionalLight);
@@ -92,6 +96,7 @@ function init() {
                     fragmentShader: fragShader 
                 });
                 scene.add(child);
+                ogreMesh = child as Mesh;
             }
         });
     });
@@ -102,6 +107,8 @@ function init() {
 }
 
 function draw() : void {
+    directionalLight.rotation.y += 0.01;
+
     renderer.render( scene, camera );
 
     if (capture) {
