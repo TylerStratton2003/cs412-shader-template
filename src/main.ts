@@ -1,6 +1,6 @@
 
 
-import {controller as part2controller} from './final';
+import {controller as controller} from './final';
 
 window.addEventListener("DOMContentLoaded", main);
 
@@ -17,7 +17,7 @@ function main() {
     const hash = window.location.hash;
 
     
-    mainController = part2controller;
+    mainController = controller;
     
 
     mainController.init();

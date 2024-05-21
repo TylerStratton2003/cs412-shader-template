@@ -19,7 +19,7 @@ in vec3 fPosition;  // fragment position in camera coordinates
 
 void main() {
 
-    // TODO - Part 2 - Compute the Blinn-Phong shading model using the uniform variables above.
+    // Compute the Blinn-Phong shading model using the uniform variables above.
     //       When using textures, convert the texture value from sRGB to linear space first using the
     //       provided function sRGBToLinear( color ).  Sum the contributions of each light with a loop.
     vec4 kD = texture(diffuseTex, texCoord);
@@ -41,7 +41,7 @@ void main() {
     }
     //finalLight += ambient.rgb;
 
-    // TODO - Part 2 - Convert the result of the Blinn-Phong model from linear to sRGB before writing,
+    //  Convert the result of the Blinn-Phong model from linear to sRGB before writing,
     //       using LinearTosRGB( color ).
     pc_fragColor = vec4(finalLight, 1.0); 
 }

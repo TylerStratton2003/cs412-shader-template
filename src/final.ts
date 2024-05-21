@@ -13,6 +13,7 @@ let renderer : WebGLRenderer;
 let camera : PerspectiveCamera;
 let scene : Scene;
 var intensity : number = 1;
+var spotlightGroup = new THREE.Object3D();
 let directionalLight : THREE.DirectionalLight = new THREE.DirectionalLight(0xff0000, intensity);
 directionalLight.position.set(0, 0, 0); // Position of the light
 
@@ -20,7 +21,7 @@ let capture = false;   // Whether or not to download an image of the canvas on t
 
 export const controller = {init, resize};
 
-const uniforms = {
+let uniforms = {
     lights: { value: [
         { color: directionalLight.color, position: directionalLight.position }
     ]},
@@ -29,6 +30,19 @@ const uniforms = {
     diffuseTex: { value: null as Texture },
     aoTex: {value: null as Texture}
 };
+
+// Called when the lights angle is changed.
+export function AngleChanged( angle : number ) : void {
+    guiState.angle = angle;
+    draw();
+}   
+
+// Called when the cylinder's scale is changed in the GUI.
+export function intensityChanged( value : number ) : void {
+    guiState.intensity = value;
+    draw();
+}
+
 
 function init() {
     setupGui();
@@ -57,7 +71,7 @@ function init() {
     scene.add(coneMesh);
 
     // Create an Object3D group and add the light and cone to it
-    var spotlightGroup = new THREE.Object3D();
+    spotlightGroup = new THREE.Object3D();
     spotlightGroup.add(directionalLight);
     spotlightGroup.add(coneMesh);
     scene.add(spotlightGroup);
@@ -66,9 +80,6 @@ function init() {
     spotlightGroup.position.y -= 8; // Move up +, - down
     spotlightGroup.position.z -= 4; // Move forward +, - back
 
-    // Optional: Add spotlight helper for visualization
-    var spotlightHelper = new THREE.SpotLightHelper(directionalLight);
-    scene.add(spotlightHelper);directionalLight.position.set(5, 5, 5); // Position of the light
     scene.add(directionalLight);
 
     const texLoader = new TextureLoader();
@@ -101,8 +112,51 @@ function init() {
     window.requestAnimationFrame(draw);
 }
 
+const guiState = {
+    angle: directionalLight.rotation.y,
+    intensity: 1
+};
+
 function draw() : void {
     renderer.render( scene, camera );
+    spotlightGroup.rotation.y = guiState.angle * (Math.PI/180);
+    directionalLight.rotation.y = guiState.angle * (Math.PI/180);
+    directionalLight.intensity = guiState.intensity;
+
+    uniforms = {
+        lights: { value: [
+            { color: directionalLight.color, position: directionalLight.position }
+        ]},
+        alpha: { value: 100.0 },
+        specular: { value: 1.0 },
+        diffuseTex: { value: null as Texture },
+        aoTex: {value: null as Texture}
+    };
+
+    const texLoader = new TextureLoader();
+    
+    const diffTex = texLoader.load( 'data/ogre/diffuse.png' );
+    diffTex.flipY = false;
+    uniforms.diffuseTex.value = diffTex;
+
+    const aoTex = texLoader.load('data/ogre/ao_smile.png');
+    aoTex.flipY = false;
+    uniforms.aoTex.value = aoTex;
+
+    const loader = new GLTFLoader().setPath( 'data/ogre/' );
+    loader.load( 'ogre_smile_tangent.gltf', ( gltf ) => {
+        gltf.scene.traverse( ( child ) => {
+            if( child.type === 'Mesh' ) {
+                const mesh = child as Mesh;
+                mesh.material = new ShaderMaterial({ 
+                    uniforms: uniforms,
+                    vertexShader: vertShader, 
+                    fragmentShader: fragShader 
+                });
+                scene.add(child);
+            }
+        });
+    });
 
     if (capture) {
         capture = false;
@@ -134,6 +188,7 @@ function setupGui() {
     gui.add(uniforms.specular, 'value', 0, 1).name("Specular:");
     gui.add(buttons, 'screenshot' ).name("Capture Screenshot");
     var lightFolder = gui.addFolder('Spotlight');
-    lightFolder.add(directionalLight, 'intensity', 0, 2).name('Intensity');
+    lightFolder.add(guiState, 'intensity', 0, 2).name('Intensity').onChange((v : number) => intensityChanged(v));
+    lightFolder.add(guiState, 'angle', -180, 180).name('Angle').onChange((v : number) => AngleChanged(v));
     lightFolder.open();
 }
