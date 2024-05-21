@@ -11,7 +11,6 @@ import * as THREE from 'three';
 let canvas : HTMLCanvasElement;
 let renderer : WebGLRenderer;
 let camera : PerspectiveCamera;
-var spotlightGroup: THREE.Object3D<THREE.Object3DEventMap>;
 let angle : number;
 let scene : Scene;
 var ogreMesh : Mesh;
@@ -123,7 +122,6 @@ const guiState = {
 };
 
 function draw() : void {
-    directionalLight.rotation.y += 0.01;
 
     renderer.render( scene, camera );
     spotlightGroup.rotation.y = guiState.angle * (Math.PI/180);
